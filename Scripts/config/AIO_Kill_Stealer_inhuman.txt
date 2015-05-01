@@ -1,0 +1,4 @@
+Active = 
+MinTarget4AutoKill = 2
+GlobalKey = 
+AutoGlobalSpells = false

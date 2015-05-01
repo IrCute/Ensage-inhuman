@@ -1,0 +1,3 @@
+stackcamp = L
+activate = 
+bearkey = E
