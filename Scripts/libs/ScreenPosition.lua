@@ -1,5 +1,6 @@
 --[[
 	### ScreenPosition created by Zynox ###
+
 	Static functions:
 		ScreenPosition.new(w,h,screenRatio): Creates a new position object with YOUR width and height.
 			
@@ -11,8 +12,10 @@
 		so if you want your drawings to connect to certain HUD elements, 
 		you might need to check for the screen ratio yourself.
 		The internal screenratio conversion doesn't work as expected yet!
+
 	Example:
 		require("libs.ScreenPosition")
+
 		local sPos = ScreenPosition.new(1152, 648, 16/9) -- our screenSize.x, screenSize.y and screenRatio
 		local x,y,w,h = sPos:GetPosition(317, 0, 38, 27) -- retrieve correct values for the client
 		local rect = drawMgr:CreateRect(x, y, w, h, -1) -- draw a white rectangle above the first hero icon

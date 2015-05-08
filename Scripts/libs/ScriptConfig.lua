@@ -1,5 +1,6 @@
 --[[
 	### ScriptConfig created by Zynox ###
+
 	Static functions:
 		ScriptConfig.new([filename]): Creates a new config file. If no filename is given it will use the name of the script.
 			
@@ -9,6 +10,7 @@
 		ScriptConfig:Load(): Returns true if the config has been loaded and false if the config didn't exist but has been created.
 		ScriptConfig:CreateDefault(): Creates a new config file and overwrites any existing config entries.
 		ScriptConfig:GetParameter(parameter[,withDefault): Returns the loaded value for the given parameter. if withDefault is true then it will also return the default value.
+
 	Metamethods:
 		__index: Same function as GetParameter.
 		__newindex: Same function as SetParameter (can't be used for hotkeys since no type can be specified).
@@ -16,14 +18,17 @@
 	Notes:
 		Changing config values in the script and saving them to the file is currently not possible!
 		Hotkey ascii-keycodes MUST be as decimal values! Hexvalues are currently not supported.
+
 	Attributes (please don't change them):
 		ScriptConfig.TYPE_UNKNOWN: 	unknown value type, used for errors.
 		ScriptConfig.TYPE_BOOL: 		boolean type for values may have "true" or "false"
 		ScriptConfig.TYPE_STRING: 	string value
 		ScriptConfig.TYPE_NUMBER:	number value
 		ScriptConfig.TYPE_HOTKEY:	hotkey value might be a single UPPERCASE character or the ascii key code
+
 	Example:
 		require("libs.ScriptConfig")
+
 		local config = ScriptConfig.new()
 		config:SetParameter("Hello", "Ensage")
 		config:SetParameter("myHotkey", "F", config.TYPE_HOTKEY)
@@ -31,12 +36,14 @@
 		config:SetParameter("A new parameter", "hihi") 
 		config.directlySet = "directly set and created new"
 		config.SomeFeature = true
+
 		local loaded = config:Load()
 		if loaded then
 			print("Config has been loaded")
 		else
 			print("A new config file has been created")
 		end
+
 	Changelog:
 		* Added TYPE_STRING_ARRAY to parse "string1, string2, string3" and return it as a table
 		* Fixed a bug with CreateDefault

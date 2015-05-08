@@ -1,4 +1,4 @@
----<<Automatic: Midas, Phase boots, bottle in fountain, Magic stick and Bloodstone if low hp>>
+---<<Automatic: Midas, bottle in fountain, Magic stick and Bloodstone if low hp>>
 require("libs.Utils")
 
 local play = false local sleep = {0,0,0,0,0}
@@ -9,7 +9,6 @@ function Tick(tick)
 
     local bloodstone = me:FindItem("item_bloodstone")
     local bottle = me:FindItem("item_bottle")
-	local phaseboots = me:FindItem("item_phase_boots")
 	local midas = me:FindItem("item_hand_of_midas")
 	local stick = me:FindItem("item_magic_stick") or me:FindItem("item_magic_wand")
 
@@ -30,11 +29,6 @@ function Tick(tick)
 		if tick > sleep[3] and bottle and bottle:CanBeCasted() and me:DoesHaveModifier("modifier_fountain_aura_buff") and not me:DoesHaveModifier("modifier_bottle_regeneration") and (me.health < me.maxHealth or me.mana < me.maxMana) then
 			me:CastAbility(bottle)
 			sleep[3] = tick + 1000 + client.latency
-		end
-
-		if tick > sleep[4] and phaseboots and phaseboots:CanBeCasted() then
-			me:CastAbility(phaseboots)
-			sleep[4] = tick + 1000 + client.latency
 		end
 
 		if tick > sleep[5] and stick and stick:CanBeCasted() and stick.charges > 0 and me.health/me.maxHealth < 0.3 then

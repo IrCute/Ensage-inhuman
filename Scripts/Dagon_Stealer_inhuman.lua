@@ -1,4 +1,4 @@
-rrequire("libs.Utils")
+require("libs.Utils")
 require("libs.ScriptConfig")
 
 local config = ScriptConfig.new()

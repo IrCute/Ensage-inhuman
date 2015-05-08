@@ -1,5 +1,6 @@
 --[[
 	### EasyHUD created by Zynox ###
+
 	Static functions:
 		EasyHUD.new(x,y,w,h,[title,backgroundColor,textColor,minimizeButton,closeButton): Returns a new HUD object (constructor)
 		EasyHUD.new(x,y,w,h,[title,minimizeButton,closeButton): Returns a new HUD object (constructor)
@@ -8,17 +9,21 @@
 		EasyHUD:IsClosed(): Returns true if the HUD is closed
 		EasyHUD:IsMinimized(): Returns true if the HUD is minimized
 		EasyHUD:IsChecked(id): Returns true if the given element is a checkbox and checked
+
 		EasyHUD:Minimize([titlebarButtons): Minimizes/Restores the HUD depending on it's state
 		EasyHUD:Open(): Opens the HUD
 		EasyHUD:Close(): Closes the HUD
+
 		EasyHUD:RemoveElement(id): Returns true if the element with the given id was found and removed
 		EasyHUD:CreateText(x,y,text): Returns the id and a DrawText object
 		EasyHUD:CreateTitleButton(color,text[,func): Returns the id, DrawRect, DrawRect (outline) and a DrawText object
 		EasyHUD:CreateButton(x,y,w,h,color,text[,func): Returns the id, DrawRect, DrawRect (outline) and a DrawText object
 		EasyHUD:EasyHUD:AddCheckbox(x,y,w,h,text[,func,initstate,colorTrue,colorFalse): Same as EasyHUD:CreateButton
+
 	Notes:
 		The function for a button/checkbox will always provide all button elements as parameters.
 		So you'll receive buttonBackground (DrawRect), buttonFrame (DrawRect), buttonText (DrawText)[, checkboxState (boolean for checkboxes)
+
 	Attributes (please don't change them):
 		EasyHUD.titleSize: 			height of the title bar
 		EasyHUD.textColor: 			default text color
@@ -26,15 +31,19 @@
 		EasyHUD.buttonColor:		default button color
 		EasyHUD.checkboxTrue:		default checkbox color for checked
 		EasyHUD.checkboxFalse:		default checkbox color for unchecked
+
 	Example:
 		require("libs.EasyHUD")
+
 		function buttonClick(b1,b2,t)	
 			b1.color = bit.lshift(math.random(0,0xFFFFFF),4) + 0xFF 
 		end
+
 		myHUD = EasyHUD.new(100,100,250,100,"My first HUD",true,true)
 		myHUD:AddText(0,0,"Hello World")
 		myHUD:AddButton(0,20,90,40, 0x60615FFF,"DON'T PRESS",buttonClick)
 		myHUD:AddCheckbox(0,65,35,20,"I want to win.",nil,true)
+
 	Changelog:
 		* Fixed checkboxes being clickable while minimized
 		* Fixed an error for buttons without callback functions.
@@ -360,3 +369,4 @@ function EasyHUD:AddCheckbox(x,y,w,h,text,func,initstate, colorTrue, colorFalse)
 	self.id = self.id + 1
 	return (self.id-1),button,buttonOut,buttonText
 end
+
