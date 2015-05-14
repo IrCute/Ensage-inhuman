@@ -190,7 +190,7 @@ function Tick(tick)
 		KillMines(me,6,{300,450,600},{450,600,750},true,ID)
 	elseif ID == CDOTA_Unit_Hero_Tusk then
 		local tkdmg = (me.dmgMin + me.dmgBonus)*3.5
-		Kill(false,me,4,{tkdmg, tkdmg, tkdmg, tkdmg},nil,300,1)
+		Kill(false,me,6,{tkdmg, tkdmg, tkdmg, tkdmg},nil,300,1)
 	elseif ID == CDOTA_Unit_Hero_Obsidian_Destroyer then
 		ComplexKill(false,me,4,{8,9,10},{9,10,11},nil,2,ID)	
 	elseif ID == CDOTA_Unit_Hero_Elder_Titan then

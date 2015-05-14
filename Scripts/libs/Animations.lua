@@ -109,10 +109,12 @@ function Animations.trackingTick(tick)
 	if not Animations.startTime then Animations.startTime = GetTick()
 	elseif (GetTick() - Animations.startTime) >= 1000 then Animations.startTime = GetTick() Animations.maxCount = Animations.count Animations.count = 0
 	else Animations.count = Animations.count + 1 end
-	local entities = entityList:GetEntities({type=LuaEntity.TYPE_HERO,visible=true,alive=true})
-	entities[#entities + 1] = entityList:GetEntities({classId=CDOTA_Unit_SpiritBear,visible=true,alive=true})[1]
-	for i,v in ipairs(entities) do
-		if (v.hero and not v:IsIllusion()) or v.classId == CDOTA_Unit_SpiritBear then
+	local entities = entityList:GetEntities(function (v) return ((v.type == LuaEntity.TYPE_HERO or v.classId == CDOTA_BaseNPC_Invoker_Forged_Spirit or v.classId == CDOTA_Unit_Broodmother_Spiderling or v.classId == CDOTA_Unit_SpiritBear or v.classId == CDOTA_Unit_VisageFamiliar or 
+	v.classId == CDOTA_BaseNPC_Creep_Neutral or v.classId == CDOTA_Unit_Brewmaster_PrimalEarth or v.classId == CDOTA_Unit_Brewmaster_PrimalFire or v.classId == CDOTA_Unit_Brewmaster_PrimalStorm or v.name == "npc_dota_necronomicon_archer_1" or v.name == "npc_dota_necronomicon_archer_2" or v.name == "npc_dota_necronomicon_archer_3" or v.name == "npc_dota_necronomicon_warrior_1" or 
+	v.name == "npc_dota_necronomicon_warrior_2" or v.name == "npc_dota_necronomicon_warrior_3") and v.alive and v.visible) end)
+	for i = 1, #entities do
+		local v = entities[i]
+		if not v:IsIllusion() then
 			if not Animations.table[v.handle] then
 				Animations.table[v.handle] = {}
 			end
@@ -185,7 +187,7 @@ function Animations.trackingTick(tick)
 			--FlyingProjectilesCheck
 			local projs = entityList:GetProjectiles({source=v})
 			for k,z in ipairs(projs) do
-				if GetDistance2D(z.position, v.position) < 127 and not Animations.table[v.handle].canmove then
+				if (GetDistance2D(z.position, v.position) < 127 or (z.target and GetDistance2D(z,z.target) < 127)) and not Animations.table[v.handle].canmove then
 					Animations.table[v.handle].canmove = true
 					-- if v.name == "npc_dota_hero_dragon_knight" then	
 						-- print("Asd")
@@ -241,7 +243,8 @@ function Animations.isCriting(hero)
 end
 
 function Animations.CanMove(hero)
-	if Animations.table[hero.handle] then return Animations.table[hero.handle].canmove and HeroInfo(hero) and HeroInfo(hero).attackSpeed and HeroInfo(hero).attackSpeed < 300 end
+	if Animations.table[hero.handle] then return Animations.table[hero.handle].canmove and HeroInfo(hero) and HeroInfo(hero).attackSpeed and HeroInfo(hero).attackSpeed < 400 end
+	return false
 end
 
 function Animations.GetAttackTime(hero)

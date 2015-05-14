@@ -1,3 +1,6 @@
 stackcamp = L
 activate = 
 bearkey = E
+
+
+starkkey = L
