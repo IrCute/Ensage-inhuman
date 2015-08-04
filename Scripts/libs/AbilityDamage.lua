@@ -1,12 +1,12 @@
 require("libs.Utils")
-require("libs.Animations")
+require("libs.Animations2")
 --[[
                              ___
                             ( ((
                              ) ))              
   .::.ABILITY DAMAGE LIBRARY/ /( MADE BY MOONES      
  'M .-;-.-.-.-.-.-.-.-.-.-/| ((:::::::::::::::::::::::::::::::::::::::::::::.._
-(O ( ( ( ( ( ( ( ( ( ( ( ( |  ))   -============VERSION 0.1============-      _.>
+(O ( ( ( ( ( ( ( ( ( ( ( ( |  ))   -============VERSION 0.2============-      _.>
  `M `-;-`-`-`-`-`-`-`-`-`-\| ((::::::::::::::::::::::::::::::::::::::::::::::''
   `::'                      \ \(
         Description:         ) ))
@@ -22,12 +22,16 @@ require("libs.Animations")
         Changelog:
         ----------
 		
+		v0.2 - Added temporary table to access damage easily
+		
 		v0.1 - BETA Release
 		
 ]]--
 
 --Tables with all informations we need to determine actual ability damage
 AbilityDamage = {}
+
+AbilityDamage.temporaryTable = {}
 
 AbilityDamage.modifiersSpellList = {	
 	modifier_alchemist_acid_spray = { npc = true; npcModifierName = "modifier_alchemist_acid_spray_thinker"; spellName = "alchemist_acid_spray"; AbilityDamage = "damage"; tickInterval = "tick_rate"; startTime = 0; duration = "duration"; };
@@ -199,7 +203,7 @@ AbilityDamage.spellList = {
 	ember_spirit_searing_chains = { damage = "total_damage_tooltip"; };
 	ember_spirit_sleight_of_fist = { bonusDamage = "bonus_hero_damage"; heroDamage = true; };
 	ember_spirit_flame_guard = { tickDamage = "damage_per_second"; tickDuration = "duration"; tickInterval = 1; startTime = 0.2; tick = true; };
-	ember_spirit_fire_remnant = { damage = "damage"; };
+	ember_spirit_activate_fire_remnant = { damage = "damage"; };
 	earth_spirit_boulder_smash = { damage = "rock_damage"; };
 	earth_spirit_rolling_boulder = { damage = "rock_damage"; };
 	earth_spirit_geomagnetic_grip = { damage = "rock_damage"; };
@@ -207,6 +211,7 @@ AbilityDamage.spellList = {
 	earth_spirit_magnetize = {};
 	oracle_fortunes_end = { damage = "damage"; };
 	oracle_purifying_flames = { damage = "damage"; };	
+	phoenix_sun_ray = { tickDamage = "base_dmg"; tickDuration = "tooltip_duration"; tickInterval = 0.2; startTime = 0.2; tick = true; };
 	bounty_hunter_jinada = { damageMultiplier = "crit_multiplier"; heroDamage = true; };
 	--finished !?
 }
@@ -222,11 +227,15 @@ AbilityDamage.itemList = {
 }
 
 function AbilityDamage.CalculateDamage(ability, hpRegen)
-	if ability.level <= 0 then return 0 end
-	local spell = AbilityDamage.spellList[ability.name]
-	local item = AbilityDamage.itemList[ability.name]
-	local attack_modifier = AbilityDamage.attackModifiersList[ability.name]
+	local AbilityDamagetemporaryTable = AbilityDamage.temporaryTable
+	local AbilityDamagespellList = AbilityDamage.spellList
+	local AbilityDamageitemList = AbilityDamage.itemList
+	local AbilityDamageattackModifiersList = AbilityDamage.attackModifiersList
+	local spell = AbilityDamagespellList[ability.name]
 	local owner = ability.owner
+	if ability.level <= 0 and (not spell or not spell.spellLevel or owner:FindSpell(spell.spellLevel).level <= 0) then return 0 end
+	local item = AbilityDamageitemList[ability.name]
+	local attack_modifier = AbilityDamageattackModifiersList[ability.name]
 	local dmg = ability:GetDamage(ability.level)
 	if spell then
 		if spell.tick then
@@ -276,13 +285,27 @@ function AbilityDamage.CalculateDamage(ability, hpRegen)
 			if hpRegen and tickDuration then
 				finalDamage = finalDamage - (hpRegen*tickDuration)
 			end
-			--print(ability.name, finalDamage)
+			
 			return finalDamage
 		elseif spell.manaBurn then
 			if ability.name == "antimage_mana_void" then
-				return ability:GetSpecialData(""..spell.damage,ability.level)
+				local Dmg = ability:GetSpecialData(""..spell.damage,ability.level)
+				if not AbilityDamagetemporaryTable[ability.name] then
+					AbilityDamage.temporaryTable[ability.name] = {}
+					AbilityDamage.temporaryTable[ability.name][ability.level] = Dmg
+				else
+					AbilityDamage.temporaryTable[ability.name][ability.level] = Dmg
+				end
+				return Dmg
 			elseif ability.name == "invoker_emp" then
-				return ability:GetSpecialData(""..spell.damage,owner:FindSpell(spell.spellLevel).level)
+				local Dmg = ability:GetSpecialData(""..spell.damage,owner:FindSpell(spell.spellLevel).level)
+				if not AbilityDamagetemporaryTable[ability.name] then
+					AbilityDamage.temporaryTable[ability.name] = {}
+					AbilityDamage.temporaryTable[ability.name][owner:FindSpell(spell.spellLevel).level] = Dmg
+				else
+					AbilityDamage.temporaryTable[ability.name][owner:FindSpell(spell.spellLevel).level] = Dmg
+				end
+				return Dmg
 			end
 		else
 			local spellLevel = nil
@@ -331,6 +354,12 @@ function AbilityDamage.CalculateDamage(ability, hpRegen)
 			end
 			if bonusDamage then
 				damage = damage + bonusDamage
+			end
+			if not AbilityDamagetemporaryTable[ability.name] then
+				AbilityDamage.temporaryTable[ability.name] = {}
+				AbilityDamage.temporaryTable[ability.name][level] = damage
+			else
+				AbilityDamage.temporaryTable[ability.name][level] = damage
 			end
 			return damage
 		end
@@ -382,6 +411,12 @@ function AbilityDamage.CalculateDamage(ability, hpRegen)
 			if hpRegen and tickDuration then
 				finalDamage = finalDamage - (hpRegen*tickDuration)
 			end
+			if not AbilityDamagetemporaryTable[ability.name] then
+				AbilityDamage.temporaryTable[ability.name] = {}
+				AbilityDamage.temporaryTable[ability.name][level] = finalDamage
+			else
+				AbilityDamage.temporaryTable[ability.name][level] = finalDamage
+			end
 			return finalDamage
 		else
 			local level = spellLevel or ability.level
@@ -431,32 +466,60 @@ function AbilityDamage.CalculateDamage(ability, hpRegen)
 			damage = (((item.damage) and (ability:GetSpecialData(""..item.damage))))
 		end
 		if ability.name == "item_ethereal_blade" then
-			-- local atr = owner.primaryAttribute
-			-- if atr == LuaEntityHero.ATTRIBUTE_STRENGTH then atr = owner.strengthTotal
-			-- elseif atr == LuaEntityHero.ATTRIBUTE_AGILITY then atr = owner.agilityTotal
-			-- elseif atr == LuaEntityHero.ATTRIBUTE_INTELLIGENCE then atr = owner.intellectTotal
-			-- end
-			local str = owner.strengthTotal
-			local agi = owner.agilityTotal
-			local int = owner.intellectTotal
-			local atr = str
-			if agi > atr then atr = agi end
-			if int > atr then atr = int end		
+			local atr = owner.primaryAttribute
+			if atr == LuaEntityHero.ATTRIBUTE_STRENGTH then atr = owner.strengthTotal
+			elseif atr == LuaEntityHero.ATTRIBUTE_AGILITY then atr = owner.agilityTotal
+			elseif atr == LuaEntityHero.ATTRIBUTE_INTELLIGENCE then atr = owner.intellectTotal
+			end
+			-- local str = owner.strengthTotal
+			-- local agi = owner.agilityTotal
+			-- local int = owner.intellectTotal
+			-- local atr = str
+			-- if agi > atr then atr = agi end
+			-- if int > atr then atr = int end		
 			damage = damage + (((item.mult) and (ability:GetSpecialData(""..item.mult))))*atr
+		end
+		if ability.name ~= "item_ethereal_blade" then
+			if not AbilityDamagetemporaryTable[ability.name] then
+				AbilityDamage.temporaryTable[ability.name] = {}
+				AbilityDamage.temporaryTable[ability.name][ability.level] = damage
+			else
+				AbilityDamage.temporaryTable[ability.name][ability.level] = damage
+			end
 		end
 		return damage
 	elseif dmg then
+		if not AbilityDamagetemporaryTable[ability.name] then
+			AbilityDamage.temporaryTable[ability.name] = {}
+			AbilityDamage.temporaryTable[ability.name][ability.level] = dmg
+		else
+			AbilityDamage.temporaryTable[ability.name][ability.level] = dmg
+		end
 		return dmg
 	end
 	return nil
 end
 
 function AbilityDamage.GetDamage(ability, hpRegen)
+	local AbilityDamagetemporaryTable = AbilityDamage.temporaryTable
+	local AbilityDamagespellList = AbilityDamage.spellList
+	local spell = AbilityDamagespellList[ability.name]
+	local owner = ability.owner
+	if AbilityDamagetemporaryTable[ability.name] then
+		if spell and spell.spellLevel then
+			local level = owner:FindSpell(spell.spellLevel).level
+			if AbilityDamagetemporaryTable[ability.name][level] then
+				return AbilityDamagetemporaryTable[ability.name][level]
+			end
+		elseif AbilityDamagetemporaryTable[ability.name][ability.level] then
+			return AbilityDamagetemporaryTable[ability.name][ability.level]
+		end
+	end
 	local damage = AbilityDamage.CalculateDamage(ability, hpRegen)
 	if damage then 
 		return damage 
 	end
-	return nil
+	return 0
 end
 
 function AbilityDamage.GetDmgType(spell)
@@ -473,6 +536,7 @@ function AbilityDamage.GetDmgType(spell)
 	if spell.name == "abaddon_aphotic_shield" then type = DAMAGE_MAGC end
 	if spell.name == "meepo_poof" then type = DAMAGE_MAGC end
 	if spell.name == "axe_culling_blade" then type = DAMAGE_PURE end
+	if spell.name == "invoker_sun_strike" then type = DAMAGE_PURE end
 	if spell.name == "alchemist_unstable_concoction_throw" then type = DAMAGE_PHYS end
 	if spell.name == "centaur_stampede" then type = DAMAGE_MAGC end
 	if spell.name == "lina_laguna_blade" and entityList:GetMyHero():AghanimState() then type = DAMAGE_PURE end

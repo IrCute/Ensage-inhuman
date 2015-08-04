@@ -100,147 +100,182 @@ Animations = {}
 
 Animations.table = {}
 Animations.attacksTable = {}
+Animations.entities = {}
 Animations.startTime = nil
 Animations.count = 0
 Animations.maxCount = 0
 
-function Animations.trackingTick(tick)
+function Animations.trackingTick()
 	if not PlayingGame() or client.paused then return end
-	if not Animations.startTime then Animations.startTime = GetTick()
-	elseif (GetTick() - Animations.startTime) >= 1000 then Animations.startTime = GetTick() Animations.maxCount = Animations.count Animations.count = 0
+	local Animations = Animations
+	local tick = GetTick()
+	if not Animations.startTime then Animations.startTime = tick
+	elseif (tick - Animations.startTime) >= 500 then Animations.startTime = tick Animations.maxCount = Animations.count Animations.count = 0
 	else Animations.count = Animations.count + 1 end
-	--local entities = entityList:GetEntities(function (v) return ((v.type == LuaEntity.TYPE_HERO or v.classId == CDOTA_BaseNPC_Invoker_Forged_Spirit or v.classId == CDOTA_Unit_Broodmother_Spiderling or v.classId == CDOTA_Unit_SpiritBear or v.classId == CDOTA_Unit_VisageFamiliar or 
-	--v.classId == CDOTA_BaseNPC_Creep_Neutral or v.classId == CDOTA_Unit_Hero_Beastmaster_Beasts or v.classId == CDOTA_Unit_Brewmaster_PrimalEarth or v.classId == CDOTA_Unit_Brewmaster_PrimalFire or v.classId == CDOTA_Unit_Brewmaster_PrimalStorm or v.name == "npc_dota_necronomicon_archer_1" or v.name == "npc_dota_necronomicon_archer_2" or v.name == "npc_dota_necronomicon_archer_3" or v.name == "npc_dota_necronomicon_warrior_1" or 
---	v.name == "npc_dota_necronomicon_warrior_2" or v.name == "npc_dota_necronomicon_warrior_3") and v.alive and v.visible) end)
-	local entities = {}
-	entities[1] = entityList:GetMyHero()
-	if entities[1].classId == CDOTA_Unit_Hero_Meepo then
-		entities = {}
-		local meepos = entityList:GetEntities({type = LuaEntity.TYPE_MEEPO})
-		for i = 1, #meepos do
-			entities[#entities+1] = meepos[i]
-		end
-	end
-	for i = 1, #entities do
-		local v = entities[i]
-		if not Animations.table[v.handle] then
-			Animations.table[v.handle] = {}
-		end
-		--SleepCheck
-		if Animations.table[v.handle].canmove then
-			if not Animations.table[v.handle].sleepM or (Animations.startTime and (client.gameTime < 0 and Animations.startTime > 0)) then
-				if Animations.maxCount and Animations.maxCount > 0 then
-					Animations.table[v.handle].sleepM = tick + math.max((100/Animations.maxCount)*client.latency, 100)
+	-- local entities = {}
+	-- local me = entityList:GetMyHero()
+	-- local spider = entityList:GetEntities({classId=CDOTA_Unit_Broodmother_Spiderling,alive=true,visible=true,team=me.team,controllable=true})
+	-- local boar = entityList:GetEntities({classId=CDOTA_Unit_Hero_Beastmaster_Boar,alive=true,visible=true,team=me.team,controllable=true})
+	-- local forg = entityList:GetEntities({classId=CDOTA_BaseNPC_Invoker_Forged_Spirit,alive=true,visible=true,team=me.team,controllable=true})
+	-- local heroes = entityList:GetEntities({type=LuaEntity.TYPE_HERO,alive=true,visible=true,team=me:GetEnemyTeam()})
+	-- local heroesillusions = entityList:GetEntities({type=LuaEntity.TYPE_HERO,alive=true,visible=true,team=me.team,controllable=true,illusion=true})
+	-- local neutral = entityList:GetEntities({classId=CDOTA_BaseNPC_Creep_Neutral,alive=true,visible=true,team=me.team,controllable=true})
+	-- local bear = entityList:GetEntities({classId=CDOTA_Unit_SpiritBear,alive=true,visible=true,team=me.team,controllable=true})[1]
+	-- local earth = entityList:GetEntities({classId=CDOTA_Unit_Brewmaster_PrimalEarth,alive=true,visible=true,team=me.team,controllable=true})[1]
+	-- local fire = entityList:GetEntities({classId=CDOTA_Unit_Brewmaster_PrimalFire,alive=true,visible=true,team=me.team,controllable=true})[1]
+	-- local storm = entityList:GetEntities({classId=CDOTA_Unit_Brewmaster_PrimalStorm,alive=true,visible=true,team=me.team,controllable=true})[1]
+	-- local necorwarriors = entityList:GetEntities(function (v) return ((v.name == "npc_dota_necronomicon_archer_1" or v.name == "npc_dota_necronomicon_archer_2" or v.name == "npc_dota_necronomicon_archer_3" or v.name == "npc_dota_necronomicon_warrior_1" or 
+	-- v.name == "npc_dota_necronomicon_warrior_2" or v.name == "npc_dota_necronomicon_warrior_3") and v.alive and v.visible and v.team == me.team and v.controllable) end)
+	-- local entitiesCount = 0
+	-- for i = 1, #heroes do local v = heroes[i] entitiesCount = entitiesCount + 1 entities[entitiesCount] = v end
+	-- for i = 1, #heroesillusions do local v = heroesillusions[i] entitiesCount = entitiesCount + 1 entities[entitiesCount] = v end
+	-- if earth then
+		-- entitiesCount = entitiesCount + 1 entities[entitiesCount] = earth 
+	-- end
+	-- if fire then
+		-- entitiesCount = entitiesCount + 1 entities[entitiesCount] = fire 
+	-- end
+	-- if storm then
+		-- entitiesCount = entitiesCount + 1 entities[entitiesCount] = storm 
+	-- end
+	-- if me then
+		-- entitiesCount = entitiesCount + 1 entities[entitiesCount] = me
+	-- end
+	-- for i = 1, #necorwarriors do local v = necorwarriors[i] entitiesCount = entitiesCount + 1 entities[entitiesCount] = v end
+	-- for i = 1, #spider do local v = spider[i] entitiesCount = entitiesCount + 1 entities[entitiesCount] = v end
+	-- for i = 1, #boar do local v = boar[i] entitiesCount = entitiesCount + 1 entities[entitiesCount] = v end 
+	-- for i = 1, #forg do local v = forg[i] entitiesCount = entitiesCount + 1 entities[entitiesCount] = v end
+	-- for i = 1, #neutral do local v = neutral[i] entitiesCount = entitiesCount + 1 entities[entitiesCount] = v end
+	if not Animations.entities then return end
+	for i = 1, #Animations.entities do	
+		local v = Animations.entities[i]
+		if v then
+			if not Animations.table[v.handle] then
+				Animations.table[v.handle] = {}
+			end
+			--SleepCheck
+			if Animations.table[v.handle].canmove then
+				if not Animations.table[v.handle].sleepM or (Animations.startTime and (client.gameTime < 0 and Animations.startTime > 0)) then
+					if Animations.maxCount and Animations.maxCount > 0 then
+						Animations.table[v.handle].sleepM = tick + math.max((100/Animations.maxCount)*client.latency, 100)
+					end
+				end
+				if Animations.table[v.handle].sleepM then
+					if tick < Animations.table[v.handle].sleepM then
+						Animations.table[v.handle].sleepingM = true
+					end
+					if tick > Animations.table[v.handle].sleepM then
+						Animations.table[v.handle].sleepingM = false
+						Animations.table[v.handle].sleepM = tick + math.max((100/Animations.maxCount)*client.latency, 100)
+					end
 				end
 			end
-			if Animations.table[v.handle].sleepM then
-				if tick < Animations.table[v.handle].sleepM then
-					Animations.table[v.handle].sleepingM = true
+			if not Animations.table[v.handle].canmove then
+				if not Animations.table[v.handle].sleepA or (Animations.startTime and (client.gameTime < 0 and Animations.startTime > 0)) then
+					if Animations.maxCount and Animations.maxCount > 0 then
+						Animations.table[v.handle].sleepA = tick + math.max((100/Animations.maxCount)*client.latency, 100)
+					end
 				end
-				if tick > Animations.table[v.handle].sleepM then
-					Animations.table[v.handle].sleepingM = false
-					Animations.table[v.handle].sleepM = tick + math.max((100/Animations.maxCount)*client.latency, 100)
-				end
-			end
-		end
-		if not Animations.table[v.handle].canmove then
-			if not Animations.table[v.handle].sleepA or (Animations.startTime and (client.gameTime < 0 and Animations.startTime > 0)) then
-				if Animations.maxCount and Animations.maxCount > 0 then
-					Animations.table[v.handle].sleepA = tick + math.max((100/Animations.maxCount)*client.latency, 100)
-				end
-			end
-			if Animations.table[v.handle].sleepA then
-				if tick < Animations.table[v.handle].sleepA then
-					Animations.table[v.handle].sleepingA = true
-				end
-				if tick > Animations.table[v.handle].sleepA then 
-					Animations.table[v.handle].sleepingA = false
-					Animations.table[v.handle].sleepA = tick + math.max((100/Animations.maxCount)*client.latency, 100)
+				if Animations.table[v.handle].sleepA then
+					if tick < Animations.table[v.handle].sleepA then
+						Animations.table[v.handle].sleepingA = true
+					end
+					if tick > Animations.table[v.handle].sleepA then 
+						Animations.table[v.handle].sleepingA = false
+						Animations.table[v.handle].sleepA = tick + math.max((100/Animations.maxCount)*client.latency, 100)
+					end
 				end
 			end
-		end
-		--SpellAnimationCheck
-		local abilities = v.abilities
-		if abilities then
-			for i = 1, #abilities do
-				local k = abilities[i]
-				if k.abilityPhase then
-					if not Animations.table[k.handle] then                                   
-						Animations.table[k.handle] = {}
-						Animations.table[k.handle].startTime = tick
+			--SpellAnimationCheck
+			local abilities = v.abilities
+			if abilities then
+				for i = 1, #abilities do
+					local k = abilities[i]
+					if k.abilityPhase then
+						if not Animations.table[k.handle] then                                   
+							Animations.table[k.handle] = {}
+							Animations.table[k.handle].startTime = tick
+							Animations.table[k.handle].duration = tick - Animations.table[k.handle].startTime
+							Animations.table[v.handle].canmove = false
+						end
+					else
+						Animations.table[k.handle] = nil
+					end
+					if Animations.table[k.handle] then
 						Animations.table[k.handle].duration = tick - Animations.table[k.handle].startTime
 						Animations.table[v.handle].canmove = false
 					end
-				else
-					Animations.table[k.handle] = nil
-				end
-				if Animations.table[k.handle] then
-					Animations.table[k.handle].duration = tick - Animations.table[k.handle].startTime
-					Animations.table[v.handle].canmove = false
 				end
 			end
-		end
-		local hero = HeroInfo(v)
-		hero:Update()
-		
-		Animations.table[v.handle].attackTime = hero.attackPoint - ((client.latency/1000)/(1 + (1 - 1/Animations.maxCount))) + (1/Animations.maxCount)*3*(1 + (1 - 1/Animations.maxCount))
-		Animations.table[v.handle].moveTime = (hero.attackRate) - (client.latency/1000) - (1/Animations.maxCount)*3
-		
-		--AttackAnimationCheck
-		if Animations.isAttacking(v) then
-			if not Animations.table[v.handle].startTime then
-				Animations.table[v.handle].startTime = client.gameTime
+			local hero = HeroInfo(v)
+			hero:Update()
+			
+			Animations.table[v.handle].attackTime = hero.attackPoint - ((client.latency/1000)/(1 + (1 - 1/Animations.maxCount))) + (1/Animations.maxCount)*3*(1 + (1 - 1/Animations.maxCount))
+			Animations.table[v.handle].moveTime = (hero.attackRate) - (client.latency/1000) - (1/Animations.maxCount)*3
+			
+			--AttackAnimationCheck
+			if Animations.isAttacking(v) then
+				if not Animations.table[v.handle].startTime then
+					Animations.table[v.handle].startTime = client.gameTime
+				end
+				Animations.table[v.handle].endTime = Animations.table[v.handle].startTime + (hero.attackRate) - (client.latency/1000) - (1/Animations.maxCount)*3
+				Animations.table[v.handle].canmoveTime = Animations.table[v.handle].startTime + hero.attackPoint - ((client.latency/1000)/(1 + (1 - 1/Animations.maxCount))) + (1/Animations.maxCount)*3*(1 + (1 - 1/Animations.maxCount))
 			end
-			Animations.table[v.handle].endTime = Animations.table[v.handle].startTime + (hero.attackRate) - (client.latency/1000) - (1/Animations.maxCount)*3
-			Animations.table[v.handle].canmoveTime = Animations.table[v.handle].startTime + hero.attackPoint - ((client.latency/1000)/(1 + (1 - 1/Animations.maxCount))) + (1/Animations.maxCount)*3*(1 + (1 - 1/Animations.maxCount))
-		end
-		--FlyingProjectilesCheck
-		local projs = entityList:GetProjectiles({source=v})
-		for k = 1, #projs do
-			local z = projs[k]
-			if (GetDistance2D(z.position, v.position) < 127 or (z.target and GetDistance2D(z,z.target) < 127)) and not Animations.table[v.handle].canmove then
+			--FlyingProjectilesCheck
+			local projs = entityList:GetProjectiles({source=v})
+			if v:IsRanged() then
+				for k = 1, #projs do
+					local z = projs[k]
+					if (GetDistance2D(z.position, v.position) < 127 or (z.target and GetDistance2D(z,z.target) < 127)) and not Animations.table[v.handle].canmove then
+						Animations.table[v.handle].canmove = true
+						-- if v.name == "npc_dota_hero_dragon_knight" then	
+							-- print("Asd")
+							Animations.table[v.handle].endTime = client.gameTime + Animations.table[v.handle].moveTime - Animations.table[v.handle].attackTime
+						-- else
+							-- Animations.table[v.handle].endTime = client.gameTime + (hero.attackBackswing) - (client.latency/1000) - (1/Animations.maxCount)*3
+						-- end
+					end
+				end
+			end
+			if Animations.table[v.handle].endTime and Animations.table[v.handle].endTime <= client.gameTime then
+				Animations.table[v.handle].startTime = nil
+				Animations.table[v.handle].canmoveTime = nil
+				Animations.table[v.handle].endTime = nil
+				Animations.table[v.handle].canmove = false
+			end
+			if Animations.table[v.handle].startTime then
+				Animations.table[v.handle].duration = client.gameTime - Animations.table[v.handle].startTime + 1/Animations.maxCount + client.latency/1000
+			end
+			if Animations.table[v.handle].canmoveTime and client.gameTime >= Animations.table[v.handle].canmoveTime then
 				Animations.table[v.handle].canmove = true
-				-- if v.name == "npc_dota_hero_dragon_knight" then	
-					-- print("Asd")
-					Animations.table[v.handle].endTime = client.gameTime + Animations.table[v.handle].moveTime - Animations.table[v.handle].attackTime
-				-- else
-					-- Animations.table[v.handle].endTime = client.gameTime + (hero.attackBackswing) - (client.latency/1000) - (1/Animations.maxCount)*3
-				-- end
 			end
-		end
-		if Animations.table[v.handle].endTime and Animations.table[v.handle].endTime <= client.gameTime then
-			Animations.table[v.handle].startTime = nil
-			Animations.table[v.handle].canmoveTime = nil
-			Animations.table[v.handle].endTime = nil
-			Animations.table[v.handle].canmove = false
-		end
-		if Animations.table[v.handle].startTime then
-			Animations.table[v.handle].duration = client.gameTime - Animations.table[v.handle].startTime + 1/Animations.maxCount + client.latency/1000
-		end
-		if Animations.table[v.handle].canmoveTime and client.gameTime >= Animations.table[v.handle].canmoveTime then
-			Animations.table[v.handle].canmove = true
 		end
 	end
 end
 
 function Animations.trackLoad()
+	local Animations = Animations
 	Animations.count = 0
 	Animations.maxCount = 0
+	Animations.entities = {}
 end
 
 function Animations.getCount()
+	local Animations = Animations
 	return Animations.count
 end
 
 function Animations.getDuration(ability)
+	local Animations = Animations
 	if ability and Animations.table[ability.handle] then return Animations.table[ability.handle].duration else return 0 end
 end
 
 function Animations.getAttackDuration(hero)
+	local Animations = Animations
 	if hero and Animations.table[hero.handle] then return Animations.table[hero.handle].duration else return 0 end
 end
 
-function Animations.isAnimating(ability)
+function Animations.isAnimating(ability)	
 	return ability.abilityPhase
 end
 
@@ -253,17 +288,20 @@ function Animations.isCriting(hero)
 end
 
 function Animations.CanMove(hero)
+	local Animations = Animations
 	if Animations.table[hero.handle] then return Animations.table[hero.handle].canmove and HeroInfo(hero) and HeroInfo(hero).attackSpeed and HeroInfo(hero).attackSpeed < 250 end
 	return false
 end
 
 function Animations.GetAttackTime(hero)
+	local Animations = Animations
 	if hero and Animations.table[hero.handle] and Animations.table[hero.handle].attackTime then return Animations.table[hero.handle].attackTime elseif HeroInfo(hero) and HeroInfo(hero).attackPoint then return HeroInfo(hero).attackPoint - ((client.latency/1000)/(1 + (1 - 1/Animations.maxCount))) + (1/Animations.maxCount)*3*(1 + (1 - 1/Animations.maxCount))
 	end
 	return 0
 end
 
 function Animations.getBackswingTime(hero)
+	local Animations = Animations
 	if hero and Animations.table[hero.handle] and Animations.table[hero.handle].attackTime and Animations.table[hero.handle].moveTime then return Animations.table[hero.handle].moveTime - Animations.table[hero.handle].attackTime elseif HeroInfo(hero) and HeroInfo(hero).attackPoint and HeroInfo(hero).attackRate then return (HeroInfo(hero).attackRate - (client.latency/1000) - (1/Animations.maxCount)*3) - (HeroInfo(hero).attackPoint - ((client.latency/1000)/(1 + (1 - 1/Animations.maxCount))) + (1/Animations.maxCount)*3*(1 + (1 - 1/Animations.maxCount)))
 	end
 	return 0 

@@ -1,3 +1,4 @@
+--<<ez kills d.l.>>
 require("libs.Utils")
 require("libs.ScriptConfig")
 
@@ -37,7 +38,7 @@ function Tick(tick)
 		for i, v in ipairs(enemy) do
 			if GetDistance2D(v,me) < dagon.castRange+25 and v:CanDie() then
 				if not v:DoesHaveModifier("modifier_nyx_assassin_spiked_carapace") and not v:IsLinkensProtected() then
-					if v.health < v:DamageTaken(dmgD, DAMAGE_MAGC, me) then
+					if v.health + (client.latency/1000*v.healthRegen) < v:DamageTaken(dmgD, DAMAGE_MAGC, me) then
 						me:CastAbility(dagon,v)
 						break
 					end

@@ -1,4 +1,4 @@
---<<Show a lot of hidden spells>>
+--<<Show a lot of hidden spells d.l.>>
 --show sun strike, light strike, torrent, split earth, arrow, charge, infest, assassinate, hook, powershoot, Kunkka's ghost ship, ice blast, cold feed and supports stolen spell usage by rubick.
 require("libs.Utils")
 require("libs.Res")
@@ -633,7 +633,7 @@ end
 
 function TrapF(team)
 	if SleepCheck("ShowTrap") then
-		local traps = entityList:GetEntities({classId=294})
+		local traps = entityList:GetEntities({classId=CDOTA_BaseNPC_Additive})
 		for i,v in ipairs(traps) do
 			if v.team ~= team then
 				if not effect.TS[v.handle] then

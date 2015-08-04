@@ -896,7 +896,7 @@ npc_dota_hero_shredder = {
  attackBackswing = 0.64},
 
 npc_dota_hero_bristleback = {
- attackRate = 1.7,
+ attackRate = 1.8,
  attackPoint = 0.4,
  attackRange = 128,
  movementSpeed = 295,
@@ -1297,5 +1297,29 @@ npc_dota_brewmaster_storm_1 = {
  attackPoint = 0.56,
  attackBackswing = 0.44},
  
+ npc_dota_beastmaster_boar = {
+ attackRate = 1.25,
+ attackPoint = 0.5,
+ attackBackswing = 0.47},
  
- }
+ npc_dota_beastmaster_greater_boar = {
+ attackRate = 1.25,
+ attackPoint = 0.5,
+ attackBackswing = 0.47},
+ 
+ npc_dota_visage_familiar1 = {
+ attackRate = 0.4,
+ attackPoint = 0.33,
+ attackBackswing = 0.2},
+ 
+ npc_dota_visage_familiar2 = {
+ attackRate = 0.4,
+ attackPoint = 0.33,
+ attackBackswing = 0.2},
+ 
+ npc_dota_visage_familiar3 = {
+ attackRate = 0.4,
+ attackPoint = 0.33,
+ attackBackswing = 0.2},
+ 
+}

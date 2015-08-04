@@ -1,4 +1,4 @@
---<<Displays the enemies inventory>>
+--<<Displays the enemies inventory. d.l.>>
 require("libs.ScriptConfig")
 require("libs.Utils")
 

@@ -24,6 +24,20 @@ require("libs.HeroInfo")
 	====================================
 	|             Changelog            |
 	====================================
+		
+		v1.5b
+		 - Added modifier "ursa_enrage" in dmg calculator
+		
+		v1.5a
+	   	 - Full compliance with the new 6.84 patch
+		v1.5
+		 - Rework dmg calculations:
+			*now it corrected calculate multi amplification/reduction dmg
+			*some improve performance
+			*change main formula 
+			"dmg = dmg(1-Amp)(1+Reduce)(1-self.Resist)" on
+			"dmg = ((dmg * (1-AmpPercentBefore) - AmpStaticBefore) * (1 + AmpPercentAfter - ReducePercentAfter) * (1 + ampFromOtherSource)) * (1 - self.Resist) - reduceAfterStatic + IceBlastPersent"
+	
 		v1.4d
 		 - Fixed LuaEntityNPC:IsPhysDmgImmune()
 	
@@ -290,6 +304,28 @@ utils.externalDmgReducs = {
 		reduce = {.1,.14,.18,.22},
 	},
 
+	--Nyx: Burrow
+	{
+		modifierName = "modifier_nyx_assassin_burrow",
+		type = 1,
+		reduce = .4,
+	},
+	
+	--Winter Wyvern: Curse
+	{
+		modifierName = "modifier_winter_wyvern_winters_curse",
+		type = 1,
+		reduce = .7,
+	},
+
+	
+	--Ursa: Enrage
+	{
+		modifierName = "modifier_ursa_enrage",
+		type = 1,
+		reduce = .8,
+	},
+
 	--[[Kunkka: Ghost Ship
 	{
 		modifierName = "modifier_kunkka_ghost_ship_damage_absorb",
@@ -424,8 +460,8 @@ utils.damageBlocks = {
 	--Tidehunter: Kraken Shell
 	{
 		modifierName = "modifier_tidehunter_kraken_shell",
-		meleeBlock = {7,14,21,28},
-		rangedBlock = {7,14,21,28},
+		meleeBlock = {12,24,36,48},
+		rangedBlock = {12,24,36,48},
 		abilityName = "tidehunter_kraken_shell",
 	},
 	
@@ -706,9 +742,9 @@ utils.immunity = {}
 --Modifiers that grant Physical Damage Immunity
 utils.immunity.phys = {
 	--Omniknight: Guardian Angel
-	"modifier_omninight_guardian_angel"
+	"modifier_omninight_guardian_angel",
 	--Winter Wyvern: Cold Embrace
-	-- PLACE HOLDER --
+	"modifier_winter_wyvern_cold_embrace"
 }
 
 
@@ -778,11 +814,19 @@ function GetCallerScript(index)
 end
 
 --Regular assert but if assert fails it traces the error
-function smartAssert(bool,string)
-	if not bool then
-    	print(debug.traceback())
-    	assert(bool,string)
-    end
+--using a "pcall()" in case the assertion msg arguments are wrong.
+function smartAssert(condition, ...)
+	if not condition then
+		if next({...}) then
+			local s,r = pcall(function (...) return(string.format(...)) end, ...)
+			if s then
+				print(debug.traceback())
+            			error("assertion failed!: " .. r, 2)
+         		end
+      		end
+		print(debug.traceback())
+		error("assertion failed!", 2)
+	end
 end
 
 --Returns the 2D distance (ignoring height) between 2 units.
@@ -948,7 +992,7 @@ function SelectBack(units)
 	smartAssert(type(units) == "table", debug.getinfo(1, "n").name..": Invalid Unit Table")
 	if #units > 0 then
 		for i,v in ipairs(units) do
-			if v.alive and v.visible then
+			if v.visible then
 				if i == 1 then
 					entityList:GetMyPlayer():Select(v)
 				else
@@ -1306,7 +1350,13 @@ function LuaEntityNPC:SafeCastAbility(ability,target,queue)
 	if type(target) == "boolean" then queue = target target = nil end
 	if ability and ability:CanBeCasted() and ((ability.item and self:CanUseItems()) or (not ability.item and self:CanCast())) and not (target and target.type == LuaEntity.TYPE_HERO and target.team ~= self.team and target:IsLinkensProtected() and ability:CanBeBlockedByLinkens() == true) then
 		local prev = SelectUnit(self)
-		if not target then
+		if ability:IsBehaviourType(LuaEntityAbility.BEHAVIOR_TOGGLE) then
+			if type(queue) == "boolean" then
+				entityList:GetMyPlayer():ToggleAbility(ability,queue)
+			else
+				entityList:GetMyPlayer():ToggleAbility(ability)
+			end
+		elseif not target then
 			if type(queue) == "boolean" then
 				entityList:GetMyPlayer():UseAbility(ability,queue)
 			else
@@ -1352,6 +1402,53 @@ function LuaEntityNPC:GetChanneledAbility()
 			return v
 		end
 	end
+end
+
+--Returns real movespeed of Entity
+function LuaEntityNPC:GetMovespeed()
+	local tempSpeed = self.movespeed
+	local boots = {"item_boots", "item_power_treads", 
+						"item_guardian_greaves", "item_arcane_boots", 
+						"item_phase_boots", "item_travel_boots", 
+						"item_travel_boots_2" }
+	local yashaItems = {"item_manta", "item_sange_and_yasha", "item_yasha"}
+	local bonusItems = {"item_cyclone", "item_ancient_janggo"}
+	local bonusModifiers = {{ "modifier_item_mask_of_madness_berserk", 17 }, 
+							{ "modifier_item_ancient_janggo_active", 5 },
+							{ "modifier_item_phase_boots_active", 16 }}
+	local bootsBonus, yashaBonus, flatBonus, percBonus = 0, 0, 0, 0
+	for i = 1,#self.items do
+		local v = self.items[i]
+		for z = 1,#boots do
+			if v.name == boots[z] then
+				local b = v:GetSpecialData("bonus_movement") or v:GetSpecialData("bonus_movement_speed") or 0
+				bootsBonus = math.max(bootsBonus,b)
+			end
+		end
+		for z = 1,#yashaItems do
+			if v.name == yashaItems[z] then
+				local b = v:GetSpecialData("bonus_movement") or v:GetSpecialData("bonus_movement_speed") or v:GetSpecialData("movement_speed_percent_bonus") or 0
+				yashaBonus = math.max(yashaBonus,b)
+			end
+		end
+		for z = 1,#bonusItems do
+			if v.name == bonusItems[z] then
+				local b = v:GetSpecialData("bonus_movement") or v:GetSpecialData("bonus_movement_speed") or v:GetSpecialData("movement_speed_percent_bonus") or 0
+				if v.name == "item_cyclone" then
+					flatBonus = flatBonus + b
+				else
+					percBonus = percBonus + b
+				end
+			end
+		end
+	end		
+	for i = 1, #bonusModifiers do
+		local v = bonusModifiers[i]
+		if self:DoesHaveModifier(v[1]) then
+			percBonus = percBonus + v[2]
+		end
+	end
+	return math.min((tempSpeed + bootsBonus + flatBonus) * (1 + yashaBonus/100 + percBonus/100),522)
 end
 
 --Returns the distance between LuaEntity and the given unit/position.
@@ -1422,7 +1519,7 @@ end
 
 --Returns if LuaEntity can use Aghanim's Scepter upgrades
 function LuaEntityNPC:AghanimState()
-	return self:FindItem("item_ultimate_scepter")
+	return self:FindItem("item_ultimate_scepter") or self:DoesHaveModifier("modifier_item_ultimate_scepter_consumed")
 end
 
 --Returns if LuaEntity is ranged
@@ -1432,7 +1529,7 @@ end
 
 --Returns if LuaEntity can die from the next instance of Damage
 function LuaEntityNPC:CanDie()
-	if self:CanReincarnate() or self:DoesHaveModifier("modifier_dazzle_shallow_grave") then
+	if self:CanReincarnate() or self:DoesHaveModifier("modifier_dazzle_shallow_grave") or self:DoesHaveModifier("modifier_skeleton_king_reincarnation_scepter_active") or self:DoesHaveModifier("modifier_oracle_purifying_flames") then
 		return false
 	end
 	return true
@@ -1636,6 +1733,19 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 				reduceProc = reduceProc + burst
 			end
 		end
+	
+		--Exception External Reduction: Centaur: Stampede
+		if self:DoesHaveModifier("modifier_centaur_stampede") then
+			for k,l in pairs(entityList:FindEntities({type = LuaEntity.TYPE_HERO, team = self.team, illusion = false})) do
+				if l.classId == CDOTA_Unit_Hero_Centaur or l.classId ==  CDOTA_Unit_Hero_Rubick then
+					if l:AghanimState() then
+						reduceProc = reduceProc + 0.70
+						break
+					end
+				end
+			end
+		end
+
 		
 		--Exception External Reduction: Medusa: Mana Shield
 		--	Reduction is dynamic, depends on the current mana condition
@@ -1711,7 +1821,12 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 				end
 			end
 		end
-		
+	
+		--Exception External Reduction: Silver edge debuff
+		if source:DoesHaveModifier("modifier_silver_edge_debuff") then
+			ampFromME = ampFromME - 0.4
+		end
+
 		--Exception External Damage Bonus: Ancient Apparition: Ice Blast
 		-- Damage Bonus depends on HP%.
 		if self:DoesHaveModifier("modifier_ice_blast")then
@@ -1749,35 +1864,38 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 			if self:IsPhysDmgImmune() then
 				tempDmg = 0
 			else
-				if self:DoesHaveModifier("modifier_chen_penitence")then
-					for k,l in pairs(entityList:FindEntities({type = LuaEntity.TYPE_HERO,illusion = false})) do
-						if l.team ~= self.team and (l.classId == CDOTA_Unit_Hero_Chen or l.classId == CDOTA_Unit_Hero_Rubick) then
-							local spell = l:FindSpell("chen_penitence")
-							--If flesh golem is found do the calculation related to distance
-							if spell then
-								local penitence = {.14,.18,.22,.26}
-								amp = amp + penitence[spell.level]
+				if throughBKB == nil then
+					if self:DoesHaveModifier("modifier_chen_penitence")then
+						for k,l in pairs(entityList:FindEntities({type = LuaEntity.TYPE_HERO,illusion = false})) do
+							if l.team ~= self.team and (l.classId == CDOTA_Unit_Hero_Chen or l.classId == CDOTA_Unit_Hero_Rubick) then
+								local spell = l:FindSpell("chen_penitence")
+								--If flesh golem is found do the calculation related to distance
+								if spell then
+									local penitence = {.14,.18,.22,.26}
+									amp = amp + penitence[spell.level]
+									break
+								end
 							end
 						end
 					end
-				end
-				for i,v in ipairs(utils.damageBlocks) do
-					if self:DoesHaveModifier(v.modifierName) then
-						local block
-						--Find if target is ranged
-						if self:IsRanged() then
-							block = v.rangedBlock
-						else
-							block = v.meleeBlock
+					for i,v in ipairs(utils.damageBlocks) do
+						if self:DoesHaveModifier(v.modifierName) then
+							local block
+							--Find if target is ranged
+							if self:IsRanged() then
+								block = v.rangedBlock
+							else
+								block = v.meleeBlock
+							end
+							--If block is constant
+							if type(block) == "number" then
+								reduceBlock = block
+							--Else locate block from level
+							else
+								reduceBlock = block[self:FindSpell(v.abilityName).level]
+							end
+							break
 						end
-						--If block is constant
-						if type(block) == "number" then
-							reduceBlock = block
-						--Else locate block from level
-						else
-							reduceBlock = block[self:FindSpell(v.abilityName).level]
-						end
-						break
 					end
 				end
 				tempDmg = ((tempDmg * (1-ManaShield-reduceOther) - reduceBlock) * (1 + amp - reduceProc) * (1 + ampFromME)) * (1 - self.dmgResist) - reduceStatic + AA 
@@ -1795,19 +1913,8 @@ end
 
 function LuaEntityNPC:GetTurnTime(pos) --Returns time in seconds of how much entity need to turn to given position
 	smartAssert(GetType(pos) == "Vector" or GetType(pos) == "LuaEntity" or GetType(pos) == "Vector2D" or GetType(pos) == "Projectile", debug.getinfo(1, "n").name..": Invalid Parameter")
-	if self.classId and heroInfo[self.classId] then
-		local turnrate = heroInfo[self.classId].turnRate
-		if GetType(turnrate) == "table" then
-			if self.classId == CDOTA_BaseNPC_Creep_Lane then
-				if self:IsRanged() then
-					turnrate = turnrate[2]
-				else
-					turnrate = turnrate[1]
-				end
-			else 
-				turnrate = turnrate[self.level]
-			end
-		end
+	if self.name and heroInfo[self.name] then
+		local turnrate = heroInfo[self.name].turnRate
 		if turnrate then
 			return (math.max(math.abs(FindAngleR(self) - math.rad(FindAngleBetween(self, pos))) - 0.69, 0)/(turnrate*(1/0.03)))
 		end
@@ -1822,18 +1929,22 @@ function LuaEntityNPC:FindRelativeAngle(pos)
 end
 
 function FindAngleBetween(first, second)
+	smartAssert(GetType(first) == "LuaEntity" or GetType(first) == "Vector" or GetType(first) == "Vector2D" or GetType(first) == "Projectile", "GetTurnTime: Invalid First Parameter:"..GetType(first))
+	smartAssert(GetType(second) == "LuaEntity" or GetType(second) == "Vector" or GetType(second) == "Vector2D" or GetType(second) == "Projectile" or GetType(second) == "nil", "GetTurnTime: Invalid Second Parameter:"..GetType(second))
 	if not first.x then first = first.position end if not second.x then second = second.position end
 	xAngle = math.deg(math.atan(math.abs(second.x - first.x)/math.abs(second.y - first.y)))
-	if first.x <= second.x and first.y >= second.y then
-		return 90 - xAngle
-	elseif first.x >= second.x and first.y >= second.y then
-		return xAngle + 90
-	elseif first.x >= second.x and first.y <= second.y then
-		return 270 - xAngle
-	elseif first.x <= second.x and first.y <= second.y then
-		return xAngle + 270
+	if first and second then
+		if first.x <= second.x and first.y >= second.y then
+			return 90 - xAngle
+		elseif first.x >= second.x and first.y >= second.y then
+			return xAngle + 90
+		elseif first.x >= second.x and first.y <= second.y then
+			return 270 - xAngle
+		elseif first.x <= second.x and first.y <= second.y then
+			return xAngle + 270
+		end
 	end
-	return nil
+	return 0
 end
 
 function FindAngleR(entity)
@@ -1872,14 +1983,23 @@ end
 
 function LuaEntityNPC:IsStunned()
 	return self:IsUnitState(LuaEntityNPC.STATE_STUNNED)
+	-- return self:DoesHaveModifier("modifier_stun") or self:DoesHaveModifier("modifier_stunned") or self:DoesHaveModifier("modifier_techies_stasis_trap_stunned") or self:DoesHaveModifier("modifier_tiny_avalanche_stun") 
+	-- or self:DoesHaveModifier("modifier_crystal_maiden_frostbite_ministun") or self:DoesHaveModifier("modifier_earthshaker_fissure_stun") or self:DoesHaveModifier("modifier_faceless_void_time_lock_stun") or self:DoesHaveModifier("modifier_jakiro_ice_path_stun") 
+	-- or self:DoesHaveModifier("modifier_keeper_of_the_light_mana_leak_stun") or self:DoesHaveModifier("modifier_rubick_telekinesis_stun") or self:DoesHaveModifier("modifier_lina_light_strike_array") or self:DoesHaveModifier("modifier_kunkka_torrent") 
+	-- or self:DoesHaveModifier("modifier_lion_impale") or self:DoesHaveModifier("modifier_knockback")
 end
 
 function LuaEntityNPC:IsHexed()
 	return self:IsUnitState(LuaEntityNPC.STATE_HEXED)
+	--return self:DoesHaveModifier("modifier_sheepstick_debuff") or self:DoesHaveModifier("modifier_shadow_shaman_voodoo") or self:DoesHaveModifier("modifier_lion_voodoo")
 end
 
 function LuaEntityNPC:IsInvisible()
 	return self:IsUnitState(LuaEntityNPC.STATE_INVISIBLE)
+	-- return self:DoesHaveModifier("modifier_invisible") or self:DoesHaveModifier("modifier_item_invisibility_edge_windwalk") or self:DoesHaveModifier("modifier_lycan_summon_wolves_invisibility") or self:DoesHaveModifier("modifier_persistent_invisibility") 
+	-- or self:DoesHaveModifier("modifier_phantom_lancer_doppelwalk_invis") or self:DoesHaveModifier("modifier_riki_permanent_invisibility") or self:DoesHaveModifier("modifier_rune_invis") or self:DoesHaveModifier("modifier_sandking_sand_storm_invis") 
+	-- or self:DoesHaveModifier("modifier_invoker_ghost_walk") or self:DoesHaveModifier("modifier_bounty_hunter_wind_walk") or self:DoesHaveModifier("modifier_brewmaster_storm_wind_walk") or self:DoesHaveModifier("modifier_brewmaster_wind_walk") 
+	-- or self:DoesHaveModifier("modifier_clinkz_wind_walk") or self:DoesHaveModifier("modifier_broodmother_spin_web_invisible_applier")
 end
 
 function LuaEntityNPC:IsInvul()
@@ -1887,6 +2007,8 @@ function LuaEntityNPC:IsInvul()
 end
 
 function LuaEntityNPC:IsMagicImmune()
+	-- return self:DoesHaveModifier("modifier_magicimmune") or self:DoesHaveModifier("modifier_magic_immune") or self:DoesHaveModifier("modifier_black_king_bar_immune") or self:DoesHaveModifier("modifier_juggernaut_blade_fury") or self:DoesHaveModifier("modifier_omniknight_repel") or
+	-- self:DoesHaveModifier("modifier_huskar_life_break_charge") or self:DoesHaveModifier("modifier_juggernaut_omnislash_invulnerability") or self:DoesHaveModifier("modifier_life_stealer_rage") 
 	return self:IsUnitState(LuaEntityNPC.STATE_MAGIC_IMMUNE)
 end
 
@@ -1900,7 +2022,7 @@ end
 
 --Returns if LuaEntity can move.
 function LuaEntityNPC:CanMove()
-	return not self:IsRooted() and not self:IsStunned() and self.alive
+	return not self:IsRooted() and not self:IsStunned() and not self:DoesHaveModifier("modifier_slark_pounce_leash") and self.alive
 end
 
 --Returns if LuaEntity can cast spells.
@@ -1926,8 +2048,8 @@ end
 
 --Returns if LuaEntity can be casted.
 function LuaEntityAbility:CanBeCasted()
-	return self.cd == 0 and entityList:GetMyHero().mana >= self.manacost
-	--return self.state == LuaEntityAbility.STATE_READY
+	--return self.cd == 0 and entityList:GetMyHero().mana >= self.manacost
+	return self.state == LuaEntityAbility.STATE_READY
 end
 
 --Returns if LuaEntity can be blocked by Linken's Sphere.
@@ -2012,6 +2134,7 @@ utils.entityFuncs = {
 	{"FindItem",              "LuaEntityNPC"},
 	{"FindDagon",             "LuaEntityNPC"},
 	{"SetPowerTreadsState",   "LuaEntityNPC"},
+	{"GetMovespeed",          "LuaEntityNPC"},
 	{"CastItem",              "LuaEntityNPC"},
 	{"SafeCastItem",          "LuaEntityNPC"},
 	{"FindAbility",           "LuaEntityNPC"},

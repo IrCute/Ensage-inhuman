@@ -1,3 +1,5 @@
+--<<rrrrrrrrrubick. d.l.>>
+
 require("libs.Utils")
 require("libs.ScriptConfig")
 require("libs.SideMessage")
